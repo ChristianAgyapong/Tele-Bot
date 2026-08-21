@@ -1,6 +1,8 @@
 import base64
+import io
 
 import httpx
+from PIL import Image
 
 from config.settings import OPENROUTER_API_KEY, OPENROUTER_MODEL, logger
 
@@ -36,6 +38,16 @@ VISION_SYSTEM_PROMPT = (
 )
 
 
+def optimize_image(image_bytes: bytes, max_dimension: int = 1600) -> bytes:
+    """Reduce upload size while preserving enough detail for visual analysis."""
+    with Image.open(io.BytesIO(image_bytes)) as image:
+        image = image.convert("RGB")
+        image.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
+        output = io.BytesIO()
+        image.save(output, format="JPEG", quality=82, optimize=True)
+        return output.getvalue()
+
+
 async def analyze_image(
     image_bytes: bytes,
     prompt: str = (
@@ -49,6 +61,11 @@ async def analyze_image(
     if not OPENROUTER_API_KEY:
         logger.error("Image analysis unavailable: OPENROUTER_API_KEY is not configured")
         return VISION_NOT_CONFIGURED_MESSAGE
+
+    try:
+        image_bytes = optimize_image(image_bytes)
+    except Exception:
+        logger.warning("Could not optimize image; sending original bytes")
 
     image_data = base64.b64encode(image_bytes).decode("ascii")
     payload = {
@@ -77,7 +94,7 @@ async def analyze_image(
     }
 
     try:
-        async with httpx.AsyncClient(timeout=45.0) as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 OPENROUTER_URL,
                 headers={

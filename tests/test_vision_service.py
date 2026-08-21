@@ -5,6 +5,7 @@ import pytest
 from services.vision_service import (
     VISION_NOT_CONFIGURED_MESSAGE,
     analyze_image,
+    optimize_image,
 )
 
 
@@ -14,6 +15,20 @@ async def test_analyze_image_explains_missing_openrouter_configuration():
         result = await analyze_image(b"image-bytes")
 
     assert result == VISION_NOT_CONFIGURED_MESSAGE
+
+
+def test_optimize_image_reduces_large_dimensions():
+    from PIL import Image
+    import io
+
+    source = io.BytesIO()
+    Image.new("RGB", (3200, 2400), "white").save(source, format="PNG")
+
+    optimized = optimize_image(source.getvalue())
+
+    with Image.open(io.BytesIO(optimized)) as image:
+        assert max(image.size) <= 1600
+        assert image.format == "JPEG"
 
 
 @pytest.mark.asyncio
