@@ -1,3 +1,7 @@
+import os
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from threading import Thread
+
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -19,6 +23,32 @@ from handlers.academics import (
     quiz_count,
     quiz_setup,
 )
+
+
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path != "/health":
+            self.send_response(404)
+            self.end_headers()
+            return
+
+        body = b"ok\n"
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, format, *args):
+        return
+
+
+def start_health_server() -> ThreadingHTTPServer:
+    port = int(os.getenv("PORT", "10000"))
+    server = ThreadingHTTPServer(("0.0.0.0", port), HealthHandler)
+    Thread(target=server.serve_forever, daemon=True).start()
+    logger.info("Health server listening on port %s", port)
+    return server
 
 
 async def post_init(application: Application) -> None:
@@ -77,6 +107,7 @@ def build_application() -> Application:
 
 def main():
     logger.info("Starting ChrixHelp AI...")
+    start_health_server()
 
     application = build_application()
 

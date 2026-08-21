@@ -34,8 +34,9 @@ python -m pytest -q
 
 ## Deployment
 
-This bot is a long-running Telegram polling worker. Deploy it as a worker or
-container, not as a serverless request function.
+This bot is a long-running Telegram polling process. The included Render
+configuration uses a Web Service and exposes `/health` so Render can monitor
+the process while Telegram polling runs in the same service.
 
 ### Docker
 
@@ -44,9 +45,9 @@ docker build -t chrixhelp .
 docker run --env-file .env --restart unless-stopped chrixhelp
 ```
 
-### Render, Railway, Fly.io, or a VPS
+### Render Web Service
 
-Create a worker/service with this start command:
+Create a new **Web Service** with this start command:
 
 ```text
 python -m bot.main
@@ -55,7 +56,7 @@ python -m bot.main
 Set `TELEGRAM_BOT_TOKEN` and `GROQ_API_KEY` as platform secrets. Never commit
 `.env` or place secrets in the Docker image. Run only one bot instance for a
 given token because Telegram polling cannot safely be shared by multiple
-workers.
+services. Render should use `/health` as the health-check path.
 
 ## Project Structure
 

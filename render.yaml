@@ -1,9 +1,10 @@
 services:
-  - type: worker
+  - type: web
     name: chrixhelp-bot
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: python -m bot.main
+    healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: TELEGRAM_BOT_TOKEN
