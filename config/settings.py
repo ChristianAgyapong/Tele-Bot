@@ -17,6 +17,7 @@ logger = logging.getLogger("chrixhelp")
 # --- Required secrets ----------------------------------------------------
 TELEGRAM_BOT_TOKEN = (os.getenv("TELEGRAM_BOT_TOKEN") or "").strip()
 GROQ_API_KEY = (os.getenv("GROQ_API_KEY") or "").strip()
+OPENROUTER_API_KEY = (os.getenv("OPENROUTER_API_KEY") or "").strip()
 
 # --- Tunables (optional, sane defaults) -----------------------------------
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
@@ -85,6 +86,7 @@ AI_MAX_TOKENS = int(os.getenv("AI_MAX_TOKENS", "1200"))
 QUIZ_DIFFICULTY = os.getenv("QUIZ_DIFFICULTY", "challenging")
 QUIZ_MAX_TOKENS = int(os.getenv("QUIZ_MAX_TOKENS", "2200"))
 QUIZ_TEMPERATURE = float(os.getenv("QUIZ_TEMPERATURE", "0.1"))
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-001")
 
 # --- Validation ------------------------------------------------------------
 _missing = [

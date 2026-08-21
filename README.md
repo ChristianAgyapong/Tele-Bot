@@ -1,7 +1,7 @@
 # Telegram Chatbot
 
 ChrixHelp AI is a Telegram study assistant with direct academic chat, topic
-explanations, and interactive domain-specific quizzes.
+explanations, interactive domain-specific quizzes, and image analysis.
 
 ## Features
 
@@ -57,6 +57,10 @@ Set `TELEGRAM_BOT_TOKEN` and `GROQ_API_KEY` as platform secrets. Never commit
 `.env` or place secrets in the Docker image. Run only one bot instance for a
 given token because Telegram polling cannot safely be shared by multiple
 services. Render should use `/health` as the health-check path.
+
+For image analysis, also set `OPENROUTER_API_KEY`. Text chat continues to use
+Groq; Telegram photos are sent to OpenRouter's vision model. Add an optional
+caption to tell the vision model what to inspect, such as `Solve this problem`.
 
 ## Project Structure
 

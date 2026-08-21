@@ -15,7 +15,7 @@ from telegram.request import HTTPXRequest
 
 from config.settings import TELEGRAM_BOT_TOKEN, logger
 from handlers.start import clear_command, start_command, help_command
-from handlers.messages import handle_message, select_mode
+from handlers.messages import handle_message, handle_photo, select_mode
 from handlers.academics import (
     explain_command,
     quiz_answer,
@@ -96,6 +96,9 @@ def build_application() -> Application:
     application.add_handler(CallbackQueryHandler(quiz_count, pattern=r"^quizcount:"))
     application.add_handler(
         MessageHandler(filters.Regex(r"^(Chat|Explain|Quiz)$"), select_mode)
+    )
+    application.add_handler(
+        MessageHandler(filters.PHOTO, handle_photo)
     )
     application.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)

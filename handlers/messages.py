@@ -4,6 +4,7 @@ from telegram.ext import ContextTypes
 
 from config.settings import MAX_HISTORY_MESSAGES, MAX_USER_MESSAGE_LENGTH, logger
 from services.ai_service import FALLBACK_MESSAGE, generate_response
+from services.vision_service import analyze_image
 from utils.helpers import format_telegram_message, split_message
 from handlers.start import MAIN_KEYBOARD
 
@@ -134,3 +135,36 @@ async def handle_message(
         )
 
     await send_ai_reply(update, context, message_text, remember=True)
+
+
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.photo:
+        return
+
+    caption = (update.message.caption or "Analyze this image and explain what is important in it.").strip()
+    if len(caption) > MAX_USER_MESSAGE_LENGTH:
+        await update.message.reply_text(
+            f"Please keep the image question under {MAX_USER_MESSAGE_LENGTH} characters."
+        )
+        return
+
+    try:
+        await context.bot.send_chat_action(
+            chat_id=update.effective_chat.id, action=ChatAction.TYPING
+        )
+        photo_file = await context.bot.get_file(update.message.photo[-1].file_id)
+        image_bytes = await photo_file.download_as_bytearray()
+        response = await analyze_image(bytes(image_bytes), caption)
+        for chunk in split_message(format_telegram_message(response)):
+            await update.message.reply_text(
+                chunk,
+                parse_mode=ParseMode.HTML,
+                disable_web_page_preview=True,
+                reply_markup=MAIN_KEYBOARD,
+            )
+    except Exception:
+        logger.exception("Failed to analyze image for chat %s", update.effective_chat.id)
+        await update.message.reply_text(
+            "I couldn't analyze that image right now. Please try again.",
+            reply_markup=MAIN_KEYBOARD,
+        )
