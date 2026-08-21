@@ -8,14 +8,24 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 VISION_FALLBACK_MESSAGE = (
     "I couldn't analyze that image right now. Please try again in a moment."
 )
+VISION_NOT_CONFIGURED_MESSAGE = (
+    "Image analysis is not configured yet. Please add the OpenRouter API key in Render."
+)
 
 
 async def analyze_image(
     image_bytes: bytes,
-    prompt: str = "Analyze this image clearly and explain anything important in it.",
+    prompt: str = (
+        "Inspect the attached image directly. Describe what you can see and explain "
+        "the important details. If it contains a question or problem, solve it "
+        "step by step. Do not claim that you cannot view images."
+    ),
 ) -> str:
-    if not image_bytes or not OPENROUTER_API_KEY:
+    if not image_bytes:
         return VISION_FALLBACK_MESSAGE
+    if not OPENROUTER_API_KEY:
+        logger.error("Image analysis unavailable: OPENROUTER_API_KEY is not configured")
+        return VISION_NOT_CONFIGURED_MESSAGE
 
     image_data = base64.b64encode(image_bytes).decode("ascii")
     payload = {
@@ -50,6 +60,12 @@ async def analyze_image(
             )
             response.raise_for_status()
             content = response.json()["choices"][0]["message"]["content"]
+            if isinstance(content, list):
+                content = "\n".join(
+                    item.get("text", "")
+                    for item in content
+                    if isinstance(item, dict) and item.get("type") == "text"
+                )
             if isinstance(content, str) and content.strip():
                 return content.strip()
     except Exception:

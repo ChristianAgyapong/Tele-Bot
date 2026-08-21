@@ -86,7 +86,7 @@ AI_MAX_TOKENS = int(os.getenv("AI_MAX_TOKENS", "1200"))
 QUIZ_DIFFICULTY = os.getenv("QUIZ_DIFFICULTY", "challenging")
 QUIZ_MAX_TOKENS = int(os.getenv("QUIZ_MAX_TOKENS", "2200"))
 QUIZ_TEMPERATURE = float(os.getenv("QUIZ_TEMPERATURE", "0.1"))
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.0-flash-001")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemini-2.5-flash")
 
 # --- Validation ------------------------------------------------------------
 _missing = [

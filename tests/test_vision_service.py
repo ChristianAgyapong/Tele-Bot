@@ -2,7 +2,15 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from services.vision_service import analyze_image
+from services.vision_service import VISION_NOT_CONFIGURED_MESSAGE, analyze_image
+
+
+@pytest.mark.asyncio
+async def test_analyze_image_explains_missing_openrouter_configuration():
+    with patch("services.vision_service.OPENROUTER_API_KEY", ""):
+        result = await analyze_image(b"image-bytes")
+
+    assert result == VISION_NOT_CONFIGURED_MESSAGE
 
 
 @pytest.mark.asyncio
@@ -36,3 +44,4 @@ async def test_analyze_image_sends_base64_image_to_openrouter():
     image_url = payload["messages"][0]["content"][1]["image_url"]["url"]
     assert image_url.startswith("data:image/jpeg;base64,")
     assert payload["messages"][0]["content"][0]["text"] == "What does this show?"
+    assert payload["model"] == "google/gemini-2.5-flash"
