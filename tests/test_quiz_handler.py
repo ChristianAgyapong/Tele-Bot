@@ -88,6 +88,7 @@ class FakeCallbackQuery:
 class CallbackUpdate:
     def __init__(self, data):
         self.callback_query = FakeCallbackQuery(data)
+        self.effective_chat = type("Chat", (), {"id": 1})()
 
 
 @pytest.mark.asyncio
@@ -104,7 +105,12 @@ async def test_quiz_setup_stores_difficulty_and_shows_count_options():
 
 @pytest.mark.asyncio
 async def test_quiz_count_stores_selected_question_count():
-    context = type("Context", (), {"chat_data": {"quiz_setup": {"difficulty": "easy"}}})()
+    bot = type("Bot", (), {"send_message": AsyncMock()})()
+    context = type(
+        "Context",
+        (),
+        {"chat_data": {"quiz_setup": {"difficulty": "easy"}}, "bot": bot},
+    )()
 
     await quiz_count(CallbackUpdate("quizcount:15"), context)
 

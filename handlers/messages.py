@@ -8,7 +8,7 @@ from config.settings import MAX_HISTORY_MESSAGES, MAX_USER_MESSAGE_LENGTH, logge
 from services.ai_service import FALLBACK_MESSAGE, generate_response
 from services.vision_service import VISION_FALLBACK_MESSAGE, analyze_image
 from utils.helpers import format_telegram_message, split_message
-from handlers.start import MAIN_KEYBOARD
+from handlers.start import MAIN_KEYBOARD, keyboard_for_mode
 
 CONVERSATION_KEY = "conversation"
 MODE_KEY = "mode"
@@ -32,7 +32,7 @@ async def _keep_typing(context: ContextTypes.DEFAULT_TYPE, chat_id: int) -> None
 
 
 async def select_mode(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    mode = update.message.text.strip().lower()
+    mode = update.message.text.strip().lower().replace("● ", "")
     context.chat_data[MODE_KEY] = mode
 
     if mode == "chat":
@@ -43,6 +43,9 @@ async def select_mode(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         message = "Choose a difficulty and number of questions first."
 
     if mode == "quiz":
+        await update.message.reply_text(
+            "Quiz mode selected.", reply_markup=keyboard_for_mode("quiz")
+        )
         keyboard = InlineKeyboardMarkup(
             [
                 [
@@ -55,7 +58,7 @@ async def select_mode(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await update.message.reply_text(message, reply_markup=keyboard)
         return
 
-    await update.message.reply_text(message, reply_markup=MAIN_KEYBOARD)
+    await update.message.reply_text(message, reply_markup=keyboard_for_mode(mode))
 
 
 async def send_ai_reply(

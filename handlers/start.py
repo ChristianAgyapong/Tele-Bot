@@ -1,13 +1,23 @@
 from telegram import KeyboardButton, ReplyKeyboardMarkup, Update
 from telegram.ext import ContextTypes
 
-MAIN_KEYBOARD = ReplyKeyboardMarkup(
-    [
-        [KeyboardButton("Chat"), KeyboardButton("Explain"), KeyboardButton("Quiz")],
-    ],
-    resize_keyboard=True,
-    is_persistent=True,
-)
+def keyboard_for_mode(active_mode: str = "chat") -> ReplyKeyboardMarkup:
+    labels = {
+        mode: f"● {mode.title()}" if mode == active_mode else mode.title()
+        for mode in ("chat", "explain", "quiz")
+    }
+    return ReplyKeyboardMarkup(
+        [[
+            KeyboardButton(labels["chat"]),
+            KeyboardButton(labels["explain"]),
+            KeyboardButton(labels["quiz"]),
+        ]],
+        resize_keyboard=True,
+        is_persistent=True,
+    )
+
+
+MAIN_KEYBOARD = keyboard_for_mode()
 
 
 async def start_command(

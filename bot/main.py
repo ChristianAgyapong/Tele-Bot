@@ -95,7 +95,7 @@ def build_application() -> Application:
     application.add_handler(CallbackQueryHandler(quiz_setup, pattern=r"^quizsetup:"))
     application.add_handler(CallbackQueryHandler(quiz_count, pattern=r"^quizcount:"))
     application.add_handler(
-        MessageHandler(filters.Regex(r"^(Chat|Explain|Quiz)$"), select_mode)
+        MessageHandler(filters.Regex(r"^(?:● )?(Chat|Explain|Quiz)$"), select_mode)
     )
     application.add_handler(
         MessageHandler(filters.PHOTO, handle_photo)
