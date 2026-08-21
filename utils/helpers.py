@@ -8,8 +8,32 @@ import re
 from config.settings import MAX_TELEGRAM_MESSAGE_LENGTH
 
 
+def _normalize_math(text: str) -> str:
+    replacements = {
+        r"\\cdot": "*",
+        r"\\times": "*",
+        r"\\div": "/",
+        r"\\leq": "<=",
+        r"\\geq": ">=",
+        r"\\neq": "!=",
+        r"\\pm": "+/-",
+        r"\\approx": "~",
+        r"\\text": "",
+    }
+    for source, target in replacements.items():
+        text = text.replace(source, target)
+    text = re.sub(r"\\(?:frac|sqrt)\s*", "", text)
+    text = re.sub(r"[{}]", "", text)
+    text = re.sub(r"\\([%#$&_])", r"\1", text)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
 def format_inline_text(text: str) -> str:
     """Escape text and apply lightweight Telegram HTML formatting."""
+    text = re.sub(r"\$\$(.+?)\$\$|\$(.+?)\$|\\\((.+?)\\\)", lambda match: _normalize_math(next(group for group in match.groups() if group is not None)), text)
+    text = re.sub(r"\\\[(.+?)\\\]", lambda match: _normalize_math(match.group(1)), text)
+    text = _normalize_math(text)
     safe_text = html.escape(text, quote=False)
     safe_text = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", safe_text)
     safe_text = re.sub(r"__(.+?)__", r"<b>\1</b>", safe_text)
@@ -101,8 +125,14 @@ def format_telegram_message(text: str) -> str:
             label, content = line.split(":", 1)
             formatted_parts.append(
                 f"<b>{format_inline_text(label.strip())}:</b>"
-                f"{format_inline_text(content)}"
+                f" {format_inline_text(content.strip())}"
             )
+        elif (
+            len(line) <= 40
+            and index + 1 < len(lines)
+            and re.match(r"^\s*\d+[.)]\s+", lines[index + 1])
+        ):
+            formatted_parts.append(f"<b>{format_inline_text(line)}</b>")
         else:
             paragraph_lines = [format_inline_text(line)]
             index += 1

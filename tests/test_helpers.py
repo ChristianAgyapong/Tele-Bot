@@ -57,3 +57,14 @@ def test_format_telegram_message_keeps_paragraph_lines_compact():
     assert "<b>Key idea:</b> Learning uses examples." in formatted
     assert "The model finds patterns in those examples." in formatted
     assert "1. Collect data.\n2. Train the model." in formatted
+
+
+def test_format_telegram_message_makes_math_telegram_safe():
+    formatted = format_telegram_message(
+        "The function is $f(x) = 2x^2 - 3x + 1$.\n"
+        "Therefore, $f(2) = 3$."
+    )
+
+    assert "$" not in formatted
+    assert "f(x) = 2x^2 - 3x + 1" in formatted
+    assert "f(2) = 3" in formatted
