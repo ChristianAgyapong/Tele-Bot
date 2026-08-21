@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes
 from config.settings import QUIZ_DIFFICULTY, QUIZ_MAX_TOKENS, QUIZ_TEMPERATURE, logger
 from services.ai_service import generate_response
 from handlers.messages import send_ai_reply
-from handlers.start import MAIN_KEYBOARD, keyboard_for_mode
+from handlers.start import MAIN_KEYBOARD
 
 DEFAULT_QUIZ_QUESTIONS = 5
 QUIZ_KEY = "active_quiz"
@@ -262,11 +262,6 @@ async def quiz_count(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(
         f"Ready for a {setup['difficulty'].title()} {question_count}-question quiz. "
         "Send me the topic or a full study description."
-    )
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="Quiz settings saved.",
-        reply_markup=keyboard_for_mode("quiz"),
     )
 
 
