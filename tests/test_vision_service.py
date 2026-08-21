@@ -2,7 +2,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from services.vision_service import VISION_NOT_CONFIGURED_MESSAGE, analyze_image
+from services.vision_service import (
+    VISION_NOT_CONFIGURED_MESSAGE,
+    analyze_image,
+)
 
 
 @pytest.mark.asyncio
@@ -41,7 +44,12 @@ async def test_analyze_image_sends_base64_image_to_openrouter():
 
     assert result == "Image analyzed"
     payload = client.post.await_args.kwargs["json"]
-    image_url = payload["messages"][0]["content"][1]["image_url"]["url"]
+    assert payload["messages"][0]["role"] == "system"
+    assert "identify the task" in payload["messages"][0]["content"]
+    user_content = payload["messages"][1]["content"]
+    image_url = user_content[1]["image_url"]["url"]
     assert image_url.startswith("data:image/jpeg;base64,")
-    assert payload["messages"][0]["content"][0]["text"] == "What does this show?"
+    assert user_content[0]["text"].startswith(
+        "User request: What does this show?"
+    )
     assert payload["model"] == "google/gemini-2.5-flash"

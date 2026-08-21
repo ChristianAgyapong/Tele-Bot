@@ -11,6 +11,25 @@ VISION_FALLBACK_MESSAGE = (
 VISION_NOT_CONFIGURED_MESSAGE = (
     "Image analysis is not configured yet. Please add the OpenRouter API key in Render."
 )
+VISION_SYSTEM_PROMPT = (
+    "You are ChrixHelp AI's visual academic tutor. Inspect the attached image "
+    "carefully and follow the user's request exactly. First identify the task: "
+    "description, text transcription, question solving, explanation, comparison, "
+    "or data extraction. If the image contains a question, answer it directly and "
+    "then show concise reasoning. For math and science, preserve symbols, units, "
+    "and formulas and show the working. For code, transcribe relevant code exactly "
+    "before explaining the issue and giving a corrected version. For charts or "
+    "tables, report the important values and trends without inventing unreadable "
+    "details. If text is unclear, say which part is unclear instead of guessing. "
+    "Use a natural, helpful tone. Never claim you cannot view the image when an "
+    "image is attached.\n\n"
+    "Response format:\n"
+    "- Start with the answer or one-sentence result.\n"
+    "- Use short paragraphs, clear headings, bullets, and numbered steps.\n"
+    "- Do not use Markdown tables, horizontal rules, filler, or repeat the request.\n"
+    "- If the user asks only for a description or transcription, do not turn it "
+    "into an unnecessary lesson.\n"
+)
 
 
 async def analyze_image(
@@ -31,10 +50,17 @@ async def analyze_image(
     payload = {
         "model": OPENROUTER_MODEL,
         "messages": [
+            {"role": "system", "content": VISION_SYSTEM_PROMPT},
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": prompt},
+                    {
+                        "type": "text",
+                        "text": (
+                            "User request: " + prompt.strip() + "\n\n"
+                            "Analyze the attached image now and respond in the requested format."
+                        ),
+                    },
                     {
                         "type": "image_url",
                         "image_url": {"url": f"data:image/jpeg;base64,{image_data}"},
