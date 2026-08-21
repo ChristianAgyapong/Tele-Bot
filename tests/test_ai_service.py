@@ -15,6 +15,8 @@ def test_ai_prompt_requests_chatgpt_style_phone_friendly_format():
     assert "Do not promise perfect accuracy" in AI_SYSTEM_PROMPT
     assert "evaluate every option" in AI_SYSTEM_PROMPT
     assert "calculations are recomputed" in AI_SYSTEM_PROMPT
+    assert "locate the exact blank" in AI_SYSTEM_PROMPT
+    assert "Return the exact missing answer first" in AI_SYSTEM_PROMPT
 
 
 def test_required_secrets_are_trimmed():
