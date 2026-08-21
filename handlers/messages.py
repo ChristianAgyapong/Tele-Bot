@@ -36,9 +36,9 @@ async def select_mode(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     context.chat_data[MODE_KEY] = mode
 
     if mode == "chat":
-        message = "Chat mode selected. Send me any question."
+        message = "Chat mode"
     elif mode == "explain":
-        message = "Explain mode selected. Send me a topic and I'll teach it clearly."
+        message = "Explain mode"
     else:
         message = "Choose a difficulty and number of questions first."
 

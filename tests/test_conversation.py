@@ -62,6 +62,18 @@ async def test_message_handler_rejects_oversized_messages():
 
 
 @pytest.mark.asyncio
+async def test_mode_selection_uses_compact_confirmation():
+    from handlers.messages import select_mode
+
+    update = FakeUpdate("Explain")
+    context = FakeContext()
+
+    await select_mode(update, context)
+
+    assert update.message.reply_text.await_args.args[0] == "Explain mode"
+
+
+@pytest.mark.asyncio
 async def test_thank_you_gets_a_short_social_reply_without_ai_call():
     update = FakeUpdate("Thank you")
     context = FakeContext()
