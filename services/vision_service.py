@@ -20,13 +20,17 @@ VISION_SYSTEM_PROMPT = (
     "and formulas and show the working. For code, transcribe relevant code exactly "
     "before explaining the issue and giving a corrected version. For charts or "
     "tables, report the important values and trends without inventing unreadable "
-    "details. If text is unclear, say which part is unclear instead of guessing. "
-    "Use a natural, helpful tone. Never claim you cannot view the image when an "
-    "image is attached.\n\n"
+    "details. For screenshots, summarize only visible content. Do not guess the "
+    "app, identities, relationships, location, intent, or background context unless "
+    "the image clearly supports it. If text is unclear, say which part is unclear "
+    "instead of guessing. Never claim you cannot view an attached image.\n\n"
     "Response format:\n"
     "- Start with the answer or one-sentence result.\n"
     "- Use short paragraphs, clear headings, bullets, and numbered steps.\n"
-    "- Do not use Markdown tables, horizontal rules, filler, or repeat the request.\n"
+    "- For general image analysis, use at most 5 concise bullets with only the most "
+    "important visible details.\n"
+    "- Do not use Markdown tables, horizontal rules, filler, speculation, or repeat "
+    "the request.\n"
     "- If the user asks only for a description or transcription, do not turn it "
     "into an unnecessary lesson.\n"
 )
@@ -58,7 +62,7 @@ async def analyze_image(
                         "type": "text",
                         "text": (
                             "User request: " + prompt.strip() + "\n\n"
-                            "Analyze the attached image now and respond in the requested format."
+                            "Analyze the attached image now and respond only to that request."
                         ),
                     },
                     {

@@ -4,7 +4,7 @@ from telegram.ext import ContextTypes
 
 from config.settings import MAX_HISTORY_MESSAGES, MAX_USER_MESSAGE_LENGTH, logger
 from services.ai_service import FALLBACK_MESSAGE, generate_response
-from services.vision_service import analyze_image
+from services.vision_service import VISION_FALLBACK_MESSAGE, analyze_image
 from utils.helpers import format_telegram_message, split_message
 from handlers.start import MAIN_KEYBOARD
 
@@ -104,6 +104,12 @@ async def handle_message(
         return
 
     mode = context.chat_data.get(MODE_KEY, "chat")
+    if mode == "quiz" and QUIZ_SETUP_KEY not in context.chat_data:
+        await update.message.reply_text(
+            "Choose Quiz, difficulty, and question count before sending an image.",
+            reply_markup=MAIN_KEYBOARD,
+        )
+        return
 
     if mode == "quiz":
         if QUIZ_SETUP_KEY not in context.chat_data:
@@ -141,7 +147,25 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.photo:
         return
 
-    caption = (update.message.caption or "Analyze this image and explain what is important in it.").strip()
+    mode = context.chat_data.get(MODE_KEY, "chat")
+    caption = (update.message.caption or "").strip()
+    if mode == "explain":
+        image_prompt = (
+            caption
+            or "Explain the important concepts in this image like a patient teacher."
+        )
+    elif mode == "quiz":
+        image_prompt = (
+            "Identify the exact academic topic and important concepts shown in this "
+            "image. Return a concise study description that can be used to create "
+            "a domain-specific quiz. Do not solve or discuss unrelated topics. "
+            + (f"User focus: {caption}" if caption else "")
+        )
+    else:
+        image_prompt = (
+            caption
+            or "Analyze this image and answer or explain what is important in it."
+        )
     if len(caption) > MAX_USER_MESSAGE_LENGTH:
         await update.message.reply_text(
             f"Please keep the image question under {MAX_USER_MESSAGE_LENGTH} characters."
@@ -154,7 +178,22 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         photo_file = await context.bot.get_file(update.message.photo[-1].file_id)
         image_bytes = await photo_file.download_as_bytearray()
-        response = await analyze_image(bytes(image_bytes), caption)
+        response = await analyze_image(bytes(image_bytes), image_prompt)
+        if mode == "quiz":
+            if response == VISION_FALLBACK_MESSAGE:
+                await update.message.reply_text(response, reply_markup=MAIN_KEYBOARD)
+                return
+            from handlers.academics import create_quiz
+
+            quiz_setup = context.chat_data[QUIZ_SETUP_KEY]
+            await create_quiz(
+                update,
+                context,
+                response,
+                difficulty=quiz_setup["difficulty"],
+                question_count=quiz_setup["question_count"],
+            )
+            return
         for chunk in split_message(format_telegram_message(response)):
             await update.message.reply_text(
                 chunk,

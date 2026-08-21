@@ -46,6 +46,8 @@ async def test_analyze_image_sends_base64_image_to_openrouter():
     payload = client.post.await_args.kwargs["json"]
     assert payload["messages"][0]["role"] == "system"
     assert "identify the task" in payload["messages"][0]["content"]
+    assert "Do not guess the" in payload["messages"][0]["content"]
+    assert "at most 5 concise bullets" in payload["messages"][0]["content"]
     user_content = payload["messages"][1]["content"]
     image_url = user_content[1]["image_url"]["url"]
     assert image_url.startswith("data:image/jpeg;base64,")
