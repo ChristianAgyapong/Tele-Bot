@@ -86,11 +86,41 @@ def format_telegram_message(text: str) -> str:
         if heading:
             formatted_parts.append(f"<b>{format_inline_text(heading.group(1))}</b>")
         elif re.match(r"^\d+[.)]\s+", line):
-            formatted_parts.append(format_inline_text(line))
+            numbered_lines = []
+            while index < len(lines) and re.match(r"^\s*\d+[.)]\s+", lines[index]):
+                numbered_lines.append(format_inline_text(lines[index].strip()))
+                index += 1
+            formatted_parts.append("\n".join(numbered_lines))
+            continue
         elif line.endswith(":") and len(line) <= 80:
             formatted_parts.append(f"<b>{format_inline_text(line)}</b>")
+        elif (
+            not line.startswith(("**", "__"))
+            and re.match(r"^[^:]{1,40}:\s+\S", line)
+        ):
+            label, content = line.split(":", 1)
+            formatted_parts.append(
+                f"<b>{format_inline_text(label.strip())}:</b>"
+                f"{format_inline_text(content)}"
+            )
         else:
-            formatted_parts.append(format_inline_text(line))
+            paragraph_lines = [format_inline_text(line)]
+            index += 1
+            while index < len(lines):
+                next_line = lines[index].strip()
+                if (
+                    not next_line
+                    or re.fullmatch(r"[-*_]{3,}", next_line)
+                    or next_line.startswith("|")
+                    or re.match(r"^#{1,6}\s+", next_line)
+                    or re.match(r"^[-*•]\s+", next_line)
+                    or re.match(r"^\d+[.)]\s+", next_line)
+                ):
+                    break
+                paragraph_lines.append(format_inline_text(next_line))
+                index += 1
+            formatted_parts.append("\n".join(paragraph_lines))
+            continue
         index += 1
 
     return "\n\n".join(part for part in formatted_parts if part)

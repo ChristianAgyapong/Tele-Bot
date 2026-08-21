@@ -15,8 +15,8 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger("chrixhelp")
 
 # --- Required secrets ----------------------------------------------------
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+TELEGRAM_BOT_TOKEN = (os.getenv("TELEGRAM_BOT_TOKEN") or "").strip()
+GROQ_API_KEY = (os.getenv("GROQ_API_KEY") or "").strip()
 
 # --- Tunables (optional, sane defaults) -----------------------------------
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")

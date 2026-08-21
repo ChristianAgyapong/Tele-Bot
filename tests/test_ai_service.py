@@ -13,6 +13,13 @@ def test_ai_prompt_requests_chatgpt_style_phone_friendly_format():
     assert "Never make the student answer" in AI_SYSTEM_PROMPT
 
 
+def test_required_secrets_are_trimmed():
+    from config.settings import GROQ_API_KEY, TELEGRAM_BOT_TOKEN
+
+    assert TELEGRAM_BOT_TOKEN == TELEGRAM_BOT_TOKEN.strip()
+    assert GROQ_API_KEY == GROQ_API_KEY.strip()
+
+
 def test_ai_prompt_requires_rigorous_human_academic_tutoring():
     assert "state assumptions" in AI_SYSTEM_PROMPT
     assert "working code" in AI_SYSTEM_PROMPT

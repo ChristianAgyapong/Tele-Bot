@@ -45,3 +45,15 @@ def test_format_telegram_message_removes_rules_and_formats_lists():
     assert "• Python" in formatted
     assert "• Statistics" in formatted
     assert "• Python\n• Statistics" in formatted
+
+
+def test_format_telegram_message_keeps_paragraph_lines_compact():
+    formatted = format_telegram_message(
+        "Key idea: Learning uses examples.\n"
+        "The model finds patterns in those examples.\n\n"
+        "Steps\n1. Collect data.\n2. Train the model."
+    )
+
+    assert "<b>Key idea:</b> Learning uses examples." in formatted
+    assert "The model finds patterns in those examples." in formatted
+    assert "1. Collect data.\n2. Train the model." in formatted
