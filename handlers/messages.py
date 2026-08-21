@@ -1,3 +1,5 @@
+import asyncio
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ChatAction, ParseMode
 from telegram.ext import ContextTypes
@@ -18,6 +20,15 @@ SOCIAL_REPLIES = {
     "thx": "You're welcome.",
     "ty": "You're welcome.",
 }
+
+
+async def _keep_typing(context: ContextTypes.DEFAULT_TYPE, chat_id: int) -> None:
+    try:
+        while True:
+            await context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+            await asyncio.sleep(4)
+    except asyncio.CancelledError:
+        return
 
 
 async def select_mode(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -173,8 +184,8 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     try:
-        await context.bot.send_chat_action(
-            chat_id=update.effective_chat.id, action=ChatAction.TYPING
+        typing_task = asyncio.create_task(
+            _keep_typing(context, update.effective_chat.id)
         )
         photo_file = await context.bot.get_file(update.message.photo[-1].file_id)
         image_bytes = await photo_file.download_as_bytearray()
@@ -207,3 +218,9 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "I couldn't analyze that image right now. Please try again.",
             reply_markup=MAIN_KEYBOARD,
         )
+    finally:
+        typing_task.cancel()
+        try:
+            await typing_task
+        except asyncio.CancelledError:
+            pass
