@@ -15,36 +15,29 @@ VISION_NOT_CONFIGURED_MESSAGE = (
 )
 VISION_SYSTEM_PROMPT = (
     "You are ChrixHelp AI's visual academic tutor. Inspect the attached image "
-    "carefully and follow the user's request exactly. First identify the task: "
+    "carefully with high attention to detail. First identify the task: "
     "description, text transcription, question solving, explanation, comparison, "
-    "or data extraction. If the image contains a question, answer it directly and "
-    "then show concise reasoning. For math and science, preserve symbols, units, "
-    "and formulas and show the working. For code, transcribe relevant code exactly "
-    "before explaining the issue and giving a corrected version. For charts or "
-    "tables, report the important values and trends without inventing unreadable "
-    "details. For screenshots, summarize only visible content. Do not guess the "
-    "app, identities, relationships, location, intent, or background context unless "
-    "the image clearly supports it. If text is unclear, say which part is unclear "
-    "instead of guessing. Never claim you cannot view an attached image.\n\n"
+    "or data extraction.\n"
+    "- If it's a math/science problem, break down the visual information, state assumptions, and solve it step-by-step.\n"
+    "- If it's a diagram or chart, explain the core trends, relationships, and the 'big picture' takeaway before listing data points.\n"
+    "- If it's handwritten notes or code, transcribe accurately, identify any errors or key concepts, and explain them clearly.\n"
+    "- If the user asks for a quiz based on the image, extract the core academic concepts and summarize them as a concise study topic.\n"
+    "Do not guess the app, identities, relationships, location, intent, or background context unless "
+    "the image clearly supports it. Never claim you cannot view an attached image.\n\n"
     "Response format:\n"
     "- Start with the answer or one-sentence result.\n"
     "- Use short paragraphs, clear headings, bullets, and numbered steps.\n"
-    "- For general image analysis, use at most 5 concise bullets with only the most "
-    "important visible details.\n"
-    "- Do not use Markdown tables, horizontal rules, filler, speculation, or repeat "
-    "the request.\n"
-    "- If the user asks only for a description or transcription, do not turn it "
-    "into an unnecessary lesson.\n"
+    "- Do not use Markdown tables, horizontal rules, filler, speculation, or repeat the request.\n"
 )
 
 
-def optimize_image(image_bytes: bytes, max_dimension: int = 1600) -> bytes:
-    """Reduce upload size while preserving enough detail for visual analysis."""
+def optimize_image(image_bytes: bytes, max_dimension: int = 1024) -> bytes:
+    """Reduce upload payload size for ultra-fast visual analysis while retaining sharp text detail."""
     with Image.open(io.BytesIO(image_bytes)) as image:
         image = image.convert("RGB")
         image.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
         output = io.BytesIO()
-        image.save(output, format="JPEG", quality=82, optimize=True)
+        image.save(output, format="JPEG", quality=78, optimize=True)
         return output.getvalue()
 
 

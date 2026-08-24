@@ -156,8 +156,9 @@ async def handle_message(
 
     if mode == "explain":
         message_text = (
-            "Explain this topic like a patient teacher. Start with the key idea, "
-            "then give an analogy, steps, and one example: " + message_text
+            "Explain this topic like an expert tutor. Break it down using the Feynman technique. "
+            "Start with the core intuition, give a relatable analogy, provide the technical breakdown or steps, "
+            "and finish with a concrete example. Topic: " + message_text
         )
 
     await send_ai_reply(update, context, message_text, remember=True)

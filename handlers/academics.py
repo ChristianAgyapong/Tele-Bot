@@ -12,6 +12,7 @@ from handlers.start import MAIN_KEYBOARD
 
 DEFAULT_QUIZ_QUESTIONS = 5
 QUIZ_KEY = "active_quiz"
+STOP_WORDS = {"a", "an", "the", "in", "on", "of", "for", "and", "or", "to", "with", "is", "about", "quiz", "test", "questions", "me", "how", "what", "why"}
 DOMAIN_TERMS = {
     "stack": {"stack", "lifo", "push", "pop", "top"},
     "stacks": {"stack", "lifo", "push", "pop", "top"},
@@ -21,13 +22,11 @@ DOMAIN_TERMS = {
 
 
 def _quiz_is_on_topic(questions: list[dict], topic: str) -> bool:
-    requested_terms = set(re.findall(r"[a-z]+", topic.lower()))
+    requested_terms = set(re.findall(r"[a-z0-9]+", topic.lower()))
     required_terms = set().union(
         *(DOMAIN_TERMS.get(term, set()) for term in requested_terms)
     )
-    if not required_terms:
-        return True
-
+    
     quiz_text = " ".join(
         question["question"]
         + " "
@@ -36,7 +35,16 @@ def _quiz_is_on_topic(questions: list[dict], topic: str) -> bool:
         + question["explanation"]
         for question in questions
     ).lower()
-    return any(term in quiz_text for term in required_terms)
+
+    if required_terms:
+        return any(term in quiz_text for term in required_terms)
+
+    # General domain keyword check against non-stopwords
+    key_words = [w for w in requested_terms if w not in STOP_WORDS and len(w) > 2]
+    if not key_words:
+        return True
+
+    return any(word in quiz_text for word in key_words)
 
 
 def _parse_quiz(response: str, question_count: int = DEFAULT_QUIZ_QUESTIONS) -> list[dict]:
@@ -138,33 +146,28 @@ async def create_quiz(
     await context.bot.send_chat_action(
         chat_id=update.effective_chat.id, action=ChatAction.TYPING
     )
+    difficulty_guide = {
+        "easy": "Focus on foundational concepts, core definitions in context, and direct single-step applications.",
+        "medium": "Focus on realistic scenario analysis, cause-and-effect reasoning, and common conceptual pitfalls.",
+        "hard": "Focus on complex multi-step reasoning, quantitative/code analysis, edge cases, and comparative evaluation."
+    }.get(difficulty.lower(), "Focus on deep domain understanding and practical application.")
+
     prompt = (
-        "You are an expert assessment designer. Read the user's entire quiz request "
-        "as context, not just as a keyword. Infer the primary academic domain, the "
-        "specific subtopics, and the likely level from the wording. If the request "
-        "is a sentence or describes something being studied, build the quiz around "
-        "the concepts and relationships in that description. Do not ask for more "
-        "details before creating the quiz.\n\n"
-        f"Topic lock: {topic}\n"
-        "Every question, option, and explanation must stay inside this topic lock. "
-        "Do not switch to a related subject or use generic mathematics questions "
-        "unless the topic lock explicitly asks for mathematics.\n"
-        f"Create exactly {question_count} {difficulty} multiple-choice "
-        "questions that test understanding of that inferred domain. Avoid generic "
-        "definitions, obvious recall, unrelated foundation questions, and trick "
-        "wording. Make the questions domain-specific and useful for learning. Mix "
-        "application, reasoning, comparison, prediction, and misconception-checking. "
-        "Use realistic examples, calculations, code, evidence, or scenarios when "
-        "appropriate for the domain. Make distractors plausible and based on common "
-        "mistakes, not random nonsense. Cover different important subtopics and do "
-        "not repeat the same idea.\n\n"
-        "Return ONLY valid JSON, with no Markdown or extra text. Use this exact shape: "
+        "You are an expert assessment designer and domain specialist.\n\n"
+        f"STRICT DOMAIN LOCK: {topic}\n"
+        "100% of every question, option, and explanation MUST strictly stay locked within this academic domain. "
+        "Do NOT introduce generic questions, tangential subjects, or unrelated fluff.\n\n"
+        f"DIFFICULTY LEVEL ({difficulty.upper()}): {difficulty_guide}\n\n"
+        f"Create exactly {question_count} questions ordered in logical conceptual progression "
+        "(starting from fundamental domain concepts and advancing to application and analytical reasoning). "
+        "Apply Bloom's Taxonomy (Application, Analysis, Evaluation). "
+        "Make distractors highly plausible based on authentic student misconceptions within this domain. "
+        "Avoid trick wording, generic recall, or ambiguous choices.\n\n"
+        "Return ONLY valid JSON with no Markdown. Shape format:\n"
         '{"questions":[{"question":"...","options":["...","...","...","..."],'
-        '"correct":0,"explanation":"..."}]}. The correct value is the zero-based '
-        "index of the correct option. Each explanation must briefly explain the "
-        "reasoning and why the correct option fits the domain. Keep each question "
-        "and explanation concise so the complete JSON response fits in one answer. "
-        "Keep each question under 160 characters and each explanation under 120 characters."
+        '"correct":0,"explanation":"..."}]}. '
+        "Keep each question concise (under 180 characters) and each explanation insightful and educational (150 to 250 characters) "
+        "clearly explaining the underlying concept, why the correct option is right, and clearing potential misconceptions."
     )
 
     try:
@@ -235,16 +238,11 @@ async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     quiz["index"] += 1
     is_last = quiz["index"] == total
 
-    # Build result line.
-    correct_text = question["options"][question["correct"]]
-    if correct:
-        result_line = "✅ <b>Correct!</b>"
-    else:
-        escaped_ans = (
-            correct_text
-            .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        )
-        result_line = f"❌ Not quite — the answer was <b>{escaped_ans}</b>"
+    # Format choices
+    selected_label = "ABCD"[selected]
+    selected_option = question["options"][selected].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    correct_label = "ABCD"[question["correct"]]
+    correct_option = question["options"][question["correct"]].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
     safe_q = (
         question["question"]
@@ -254,6 +252,18 @@ async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         question["explanation"]
         .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     )
+
+    if correct:
+        answer_block = (
+            f"<b>Your Choice:</b> {selected_label}. {selected_option} ✅\n\n"
+            f"💡 <b>Key Insight & Explanation:</b>\n{explanation}"
+        )
+    else:
+        answer_block = (
+            f"<b>Your Choice:</b> {selected_label}. {selected_option} ❌\n"
+            f"<b>Correct Answer:</b> {correct_label}. {correct_option} ✅\n\n"
+            f"💡 <b>Explanation:</b>\n{explanation}"
+        )
 
     # Choose the action button: advance to next question or reveal final score.
     if is_last:
@@ -266,13 +276,11 @@ async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
             callback_data=f"quiznext:{quiz['index']}",
         )
 
-    # Edit the same message in-place: show the question + result + explanation.
-    # This keeps the entire quiz in one message bubble — no new messages per question.
+    # Edit the same message in-place: show the question + choice breakdown + explanation.
     await query.edit_message_text(
         f"<b>Question {q_num} of {total}</b>\n"
         f"{safe_q}\n\n"
-        f"{result_line}\n"
-        f"<i>{explanation}</i>",
+        f"{answer_block}",
         parse_mode=ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup([[next_button]]),
     )
@@ -401,10 +409,14 @@ async def explain_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     prompt = (
-        f"Explain the following topic in depth, like a patient teacher: {topic}. "
-        "Include a simple analogy, a clear step-by-step breakdown if it applies, "
-        "and one short worked example. Keep it well-structured with headings or "
-        "numbered steps."
+        f"Act as an expert academic tutor and explain the following topic in depth: {topic}.\n\n"
+        "Structure your response as follows:\n"
+        "1. 🎯 <b>The Core Idea</b>: A simple, intuitive explanation (Feynman technique).\n"
+        "2. 💡 <b>Analogy</b>: A relatable real-world comparison.\n"
+        "3. ⚙️ <b>How it Works</b>: The technical details, steps, or mechanics.\n"
+        "4. 📝 <b>Example</b>: A concrete worked example or application.\n"
+        "5. 🌍 <b>Why it Matters</b>: The broader significance of the topic.\n\n"
+        "Keep it highly engaging, patient, and formatted cleanly for Telegram."
     )
 
     await send_ai_reply(update, context, prompt)
