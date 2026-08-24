@@ -158,7 +158,7 @@ async def handle_message(
         message_text = (
             "Explain this topic like an expert tutor. Break it down using the Feynman technique. "
             "Start with the core intuition, give a relatable everyday analogy, provide clear steps, "
-            "and finish with an easy-to-follow practical example using plain, familiar words rather than dense technical jargon. "
+            "and finish with an easy-to-follow practical example grounded in familiar Ghana-based scenarios (e.g. local names, MoMo, trotro, markets) using plain, familiar words rather than dense technical jargon. "
             "Avoid static clichés like 'Think of it as...'. Topic: " + message_text
         )
 
