@@ -14,11 +14,22 @@ CONVERSATION_KEY = "conversation"
 MODE_KEY = "mode"
 QUIZ_SETUP_KEY = "quiz_setup"
 SOCIAL_REPLIES = {
-    "thanks": "You're welcome. I'm here whenever you need help.",
-    "thank you": "You're welcome. I'm here whenever you need help.",
-    "thank you so much": "You're very welcome.",
-    "thx": "You're welcome.",
-    "ty": "You're welcome.",
+    "thanks": "You're welcome! I'm here whenever you need help.",
+    "thank you": "You're welcome! Happy to help.",
+    "thank you so much": "You're very welcome!",
+    "thx": "You're welcome!",
+    "ty": "You're welcome!",
+    "great": "Glad that helped! What would you like to explore next?",
+    "awesome": "Awesome! Let me know if you want to break down another topic.",
+    "nice": "Glad it was clear! Feel free to ask whenever you have more questions.",
+    "cool": "Glad that made sense!",
+    "perfect": "Perfect! Ready whenever you want to work on the next topic.",
+    "got it": "Great! Let me know whenever you're ready for the next topic.",
+    "makes sense": "Glad it made sense! Ask away if you have any follow-ups.",
+    "ok": "Got it! What shall we work on next?",
+    "okay": "Got it! What shall we work on next?",
+    "alright": "Alright! Let me know what you'd like to look at next.",
+    "good": "Glad that helped!",
 }
 
 
@@ -122,9 +133,11 @@ async def handle_message(
         return
 
     message_text = update.message.text.strip()
-    social_reply = SOCIAL_REPLIES.get(message_text.casefold())
+    clean_social = re.sub(r"[^\w\s]", "", message_text.casefold()).strip()
+    social_reply = SOCIAL_REPLIES.get(clean_social) or SOCIAL_REPLIES.get(message_text.casefold())
     if social_reply:
-        await update.message.reply_text(social_reply, reply_markup=MAIN_KEYBOARD)
+        mode = context.chat_data.get(MODE_KEY, "chat")
+        await update.message.reply_text(social_reply, reply_markup=keyboard_for_mode(mode))
         return
 
     mode = context.chat_data.get(MODE_KEY, "chat")
