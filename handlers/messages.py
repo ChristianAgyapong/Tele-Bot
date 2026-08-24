@@ -35,30 +35,40 @@ async def select_mode(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     mode = update.message.text.strip().lower().replace("● ", "")
     context.chat_data[MODE_KEY] = mode
 
-    if mode == "chat":
-        message = "Chat mode"
-    elif mode == "explain":
-        message = "Explain mode"
-    else:
-        message = "Choose a difficulty and number of questions first."
+    # Clear any stale quiz setup whenever the user switches modes.
+    # Without this, switching to Chat/Explain while quiz_setup exists still
+    # routes the next message into create_quiz.
+    if mode != "quiz":
+        context.chat_data.pop(QUIZ_SETUP_KEY, None)
 
-    if mode == "quiz":
+    if mode == "chat":
         await update.message.reply_text(
-            "Quiz mode selected.", reply_markup=keyboard_for_mode("quiz")
+            "💬 Chat mode — ask me anything!",
+            reply_markup=keyboard_for_mode("chat"),
+        )
+    elif mode == "explain":
+        await update.message.reply_text(
+            "📖 Explain mode — send me any topic and I'll break it down clearly.",
+            reply_markup=keyboard_for_mode("explain"),
+        )
+    else:
+        # Quiz mode — show the active keyboard first, then the difficulty picker.
+        await update.message.reply_text(
+            "🧠 Quiz mode — choose a difficulty to get started.",
+            reply_markup=keyboard_for_mode("quiz"),
         )
         keyboard = InlineKeyboardMarkup(
             [
                 [
-                    InlineKeyboardButton("Easy", callback_data="quizsetup:easy"),
-                    InlineKeyboardButton("Medium", callback_data="quizsetup:medium"),
-                    InlineKeyboardButton("Hard", callback_data="quizsetup:hard"),
+                    InlineKeyboardButton("🟢 Easy", callback_data="quizsetup:easy"),
+                    InlineKeyboardButton("🟡 Medium", callback_data="quizsetup:medium"),
+                    InlineKeyboardButton("🔴 Hard", callback_data="quizsetup:hard"),
                 ]
             ]
         )
-        await update.message.reply_text(message, reply_markup=keyboard)
-        return
-
-    await update.message.reply_text(message, reply_markup=keyboard_for_mode(mode))
+        await update.message.reply_text(
+            "Select a difficulty level:", reply_markup=keyboard
+        )
 
 
 async def send_ai_reply(
@@ -118,16 +128,12 @@ async def handle_message(
         return
 
     mode = context.chat_data.get(MODE_KEY, "chat")
-    if mode == "quiz" and QUIZ_SETUP_KEY not in context.chat_data:
-        await update.message.reply_text(
-            "Choose Quiz, difficulty, and question count before sending an image.",
-            reply_markup=MAIN_KEYBOARD,
-        )
-        return
-
     if mode == "quiz":
         if QUIZ_SETUP_KEY not in context.chat_data:
-            await update.message.reply_text("Choose a quiz difficulty first.")
+            await update.message.reply_text(
+                "⚙️ Please choose a difficulty and question count first.",
+                reply_markup=keyboard_for_mode("quiz"),
+            )
             return
         from handlers.academics import create_quiz
 
@@ -169,6 +175,12 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             or "Explain the important concepts in this image like a patient teacher."
         )
     elif mode == "quiz":
+        if QUIZ_SETUP_KEY not in context.chat_data:
+            await update.message.reply_text(
+                "⚙️ Please choose a difficulty and question count first.",
+                reply_markup=keyboard_for_mode("quiz"),
+            )
+            return
         image_prompt = (
             "Identify the exact academic topic and important concepts shown in this "
             "image. Return a concise study description that can be used to create "

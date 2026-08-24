@@ -22,6 +22,7 @@ from handlers.academics import (
     quiz_command,
     quiz_count,
     quiz_setup,
+    summarize_command,
 )
 
 
@@ -58,6 +59,7 @@ async def post_init(application: Application) -> None:
             ("help", "Show available features"),
             ("quiz", "Start a clickable quiz"),
             ("explain", "Explain a topic clearly"),
+            ("summarize", "Summarize text or notes"),
             ("clear", "Clear chat memory"),
         ]
     )
@@ -91,6 +93,7 @@ def build_application() -> Application:
     application.add_handler(CommandHandler("clear", clear_command))
     application.add_handler(CommandHandler("quiz", quiz_command))
     application.add_handler(CommandHandler("explain", explain_command))
+    application.add_handler(CommandHandler("summarize", summarize_command))
     application.add_handler(CallbackQueryHandler(quiz_answer, pattern=r"^quiz:"))
     application.add_handler(CallbackQueryHandler(quiz_setup, pattern=r"^quizsetup:"))
     application.add_handler(CallbackQueryHandler(quiz_count, pattern=r"^quizcount:"))

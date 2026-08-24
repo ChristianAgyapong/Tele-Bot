@@ -104,11 +104,20 @@ async def _send_quiz_question(update: Update, context: ContextTypes.DEFAULT_TYPE
         [InlineKeyboardButton(f"{label}. {option}", callback_data=f"quiz:{quiz['index']}:{index}")]
         for index, (label, option) in enumerate(zip("ABCD", question["options"]))
     ]
+    # Escape AI-generated text before inserting into HTML parse_mode message.
+    # Questions from the model can contain <, >, & (e.g. x < y, a > b, &c.)
+    # which cause Telegram to throw BadRequest: Can't parse entities.
+    safe_question = (
+        question["question"]
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=(
             f"<b>Question {quiz['index'] + 1} of {len(quiz['questions'])}</b>\n\n"
-            f"{question['question']}"
+            f"{safe_question}"
         ),
         parse_mode=ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup(buttons),
@@ -201,29 +210,59 @@ async def create_quiz(
 
 async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
     quiz = context.chat_data.get(QUIZ_KEY)
     if not quiz:
+        await query.answer()
         await query.edit_message_text("This quiz has expired. Choose Quiz to start a new one.")
         return
 
     _, question_index, answer_index = query.data.split(":")
     if int(question_index) != quiz["index"]:
+        # Answer the query with an alert — do NOT call query.answer() before
+        # this point, because a query can only be answered once.
         await query.answer("That question has already been answered.", show_alert=True)
         return
 
+    # Acknowledge the button tap now that we know it's valid.
+    await query.answer()
     question = quiz["questions"][quiz["index"]]
     selected = int(answer_index)
     correct = selected == question["correct"]
     if correct:
         quiz["score"] += 1
-    result = "Correct" if correct else f"Not quite. The answer was {question['options'][question['correct']]}"
-    await query.edit_message_text(f"{result}\n\n{question['explanation']}")
+
+    correct_text = question["options"][question["correct"]]
+    if correct:
+        result_line = "✅ <b>Correct!</b>"
+    else:
+        escaped = correct_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        result_line = f"❌ Not quite — the answer was <b>{escaped}</b>"
+
+    explanation = (
+        question["explanation"]
+        .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    )
+    await query.edit_message_text(
+        f"{result_line}\n\n{explanation}",
+        parse_mode=ParseMode.HTML,
+    )
     quiz["index"] += 1
 
     if quiz["index"] == len(quiz["questions"]):
+        total = len(quiz["questions"])
+        score = quiz["score"]
+        pct = score / total
+        if pct == 1.0:
+            grade = "🏆 Perfect score!"
+        elif pct >= 0.8:
+            grade = "🌟 Great job!"
+        elif pct >= 0.6:
+            grade = "👍 Good effort!"
+        else:
+            grade = "💪 Keep practising!"
         await query.message.reply_text(
-            f"Quiz complete. Score: {quiz['score']}/{len(quiz['questions'])}",
+            f"🏁 Quiz complete!\nScore: <b>{score}/{total}</b> {grade}",
+            parse_mode=ParseMode.HTML,
             reply_markup=MAIN_KEYBOARD,
         )
         context.chat_data.pop(QUIZ_KEY, None)
@@ -237,6 +276,7 @@ async def quiz_setup(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     _, difficulty = query.data.split(":", 1)
     context.chat_data["quiz_setup"] = {"difficulty": difficulty, "question_count": 5}
+    emoji = {"easy": "🟢", "medium": "🟡", "hard": "🔴"}.get(difficulty, "🧠")
     keyboard = InlineKeyboardMarkup(
         [
             [
@@ -247,7 +287,8 @@ async def quiz_setup(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
     )
     await query.edit_message_text(
-        f"Difficulty: {difficulty.title()}\nNow choose the number of questions:",
+        f"{emoji} Difficulty: <b>{difficulty.title()}</b>\nNow choose the number of questions:",
+        parse_mode=ParseMode.HTML,
         reply_markup=keyboard,
     )
 
@@ -296,6 +337,31 @@ async def explain_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Include a simple analogy, a clear step-by-step breakdown if it applies, "
         "and one short worked example. Keep it well-structured with headings or "
         "numbered steps."
+    )
+
+    await send_ai_reply(update, context, prompt)
+
+
+async def summarize_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = " ".join(context.args).strip() if context.args else ""
+
+    if not text:
+        await update.message.reply_text(
+            "Paste the text you want summarized after the command, e.g.\n"
+            "<code>/summarize [your text here]</code>\n\n"
+            "Or switch to 💬 Chat mode and just paste the text with a message "
+            "like \"Summarize this: ...\"",
+            parse_mode=ParseMode.HTML,
+            reply_markup=MAIN_KEYBOARD,
+        )
+        return
+
+    prompt = (
+        "Summarize the following text concisely. "
+        "Use clear bullet points for the key ideas. "
+        "Keep the summary under 200 words and preserve all important facts, "
+        "numbers, and conclusions. Do not add information not in the original text.\n\n"
+        + text
     )
 
     await send_ai_reply(update, context, prompt)
