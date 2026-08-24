@@ -21,6 +21,7 @@ from handlers.academics import (
     quiz_answer,
     quiz_command,
     quiz_count,
+    quiz_next,
     quiz_setup,
     summarize_command,
 )
@@ -95,6 +96,7 @@ def build_application() -> Application:
     application.add_handler(CommandHandler("explain", explain_command))
     application.add_handler(CommandHandler("summarize", summarize_command))
     application.add_handler(CallbackQueryHandler(quiz_answer, pattern=r"^quiz:"))
+    application.add_handler(CallbackQueryHandler(quiz_next, pattern=r"^quiznext:"))
     application.add_handler(CallbackQueryHandler(quiz_setup, pattern=r"^quizsetup:"))
     application.add_handler(CallbackQueryHandler(quiz_count, pattern=r"^quizcount:"))
     application.add_handler(

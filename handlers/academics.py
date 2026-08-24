@@ -218,12 +218,10 @@ async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     _, question_index, answer_index = query.data.split(":")
     if int(question_index) != quiz["index"]:
-        # Answer the query with an alert — do NOT call query.answer() before
-        # this point, because a query can only be answered once.
+        # A query can only be answered once — don't call query.answer() before this.
         await query.answer("That question has already been answered.", show_alert=True)
         return
 
-    # Acknowledge the button tap now that we know it's valid.
     await query.answer()
     question = quiz["questions"][quiz["index"]]
     selected = int(answer_index)
@@ -231,24 +229,68 @@ async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if correct:
         quiz["score"] += 1
 
+    # Record the displayed question number before advancing the index.
+    q_num = quiz["index"] + 1
+    total = len(quiz["questions"])
+    quiz["index"] += 1
+    is_last = quiz["index"] == total
+
+    # Build result line.
     correct_text = question["options"][question["correct"]]
     if correct:
         result_line = "✅ <b>Correct!</b>"
     else:
-        escaped = correct_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        result_line = f"❌ Not quite — the answer was <b>{escaped}</b>"
+        escaped_ans = (
+            correct_text
+            .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        )
+        result_line = f"❌ Not quite — the answer was <b>{escaped_ans}</b>"
 
+    safe_q = (
+        question["question"]
+        .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    )
     explanation = (
         question["explanation"]
         .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     )
-    await query.edit_message_text(
-        f"{result_line}\n\n{explanation}",
-        parse_mode=ParseMode.HTML,
-    )
-    quiz["index"] += 1
 
-    if quiz["index"] == len(quiz["questions"]):
+    # Choose the action button: advance to next question or reveal final score.
+    if is_last:
+        next_button = InlineKeyboardButton(
+            "🏁 See Final Score", callback_data="quiznext:done"
+        )
+    else:
+        next_button = InlineKeyboardButton(
+            f"▶️ Next Question ({quiz['index'] + 1}/{total})",
+            callback_data=f"quiznext:{quiz['index']}",
+        )
+
+    # Edit the same message in-place: show the question + result + explanation.
+    # This keeps the entire quiz in one message bubble — no new messages per question.
+    await query.edit_message_text(
+        f"<b>Question {q_num} of {total}</b>\n"
+        f"{safe_q}\n\n"
+        f"{result_line}\n"
+        f"<i>{explanation}</i>",
+        parse_mode=ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup([[next_button]]),
+    )
+
+
+async def quiz_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Edit the current message to show the next question, or the final score."""
+    query = update.callback_query
+    await query.answer()
+    quiz = context.chat_data.get(QUIZ_KEY)
+    if not quiz:
+        await query.edit_message_text("This quiz has expired. Choose Quiz to start a new one.")
+        return
+
+    _, action = query.data.split(":", 1)
+
+    if action == "done" or quiz["index"] >= len(quiz["questions"]):
+        # Show the final score inside the same message.
         total = len(quiz["questions"])
         score = quiz["score"]
         pct = score / total
@@ -260,15 +302,41 @@ async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
             grade = "👍 Good effort!"
         else:
             grade = "💪 Keep practising!"
-        await query.message.reply_text(
-            f"🏁 Quiz complete!\nScore: <b>{score}/{total}</b> {grade}",
+        context.chat_data.pop(QUIZ_KEY, None)
+        await query.edit_message_text(
+            f"🏁 <b>Quiz Complete!</b>\n\n"
+            f"Score: <b>{score}/{total}</b>\n"
+            f"{grade}",
             parse_mode=ParseMode.HTML,
+        )
+        # Send a small follow-up to restore the reply keyboard.
+        await query.message.reply_text(
+            "Ready for another quiz or want to chat? Use the buttons below.",
             reply_markup=MAIN_KEYBOARD,
         )
-        context.chat_data.pop(QUIZ_KEY, None)
         return
 
-    await _send_quiz_question(update, context)
+    # Edit the same message to display the next question.
+    question = quiz["questions"][quiz["index"]]
+    safe_q = (
+        question["question"]
+        .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    )
+    buttons = [
+        [
+            InlineKeyboardButton(
+                f"{label}. {option}",
+                callback_data=f"quiz:{quiz['index']}:{idx}",
+            )
+        ]
+        for idx, (label, option) in enumerate(zip("ABCD", question["options"]))
+    ]
+    await query.edit_message_text(
+        f"<b>Question {quiz['index'] + 1} of {len(quiz['questions'])}</b>\n\n"
+        f"{safe_q}",
+        parse_mode=ParseMode.HTML,
+        reply_markup=InlineKeyboardMarkup(buttons),
+    )
 
 
 async def quiz_setup(update: Update, context: ContextTypes.DEFAULT_TYPE):
