@@ -443,11 +443,11 @@ async def explain_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Act as an expert academic tutor and explain the following topic in depth: {topic}.\n\n"
         "Structure your response as follows:\n"
         "1. 🎯 <b>The Core Idea</b>: A simple, intuitive explanation (Feynman technique).\n"
-        "2. 💡 <b>Analogy</b>: A relatable real-world comparison.\n"
-        "3. ⚙️ <b>How it Works</b>: The technical details, steps, or mechanics.\n"
-        "4. 📝 <b>Example</b>: A concrete worked example or application.\n"
-        "5. 🌍 <b>Why it Matters</b>: The broader significance of the topic.\n\n"
-        "Keep it highly engaging, patient, and formatted cleanly for Telegram."
+        "2. 💡 <b>Analogy</b>: A relatable real-world comparison using everyday concepts.\n"
+        "3. ⚙️ <b>How it Works</b>: Clear breakdown of the key concepts or steps.\n"
+        "4. 📝 <b>Example</b>: An easy-to-follow, practical example using plain, familiar words rather than dense technical jargon.\n"
+        "5. 🌍 <b>Why it Matters</b>: The broader real-world significance of the topic.\n\n"
+        "Keep it highly engaging, accessible, patient, and formatted cleanly for Telegram."
     )
 
     await send_ai_reply(update, context, prompt)

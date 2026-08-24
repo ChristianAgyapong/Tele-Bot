@@ -157,8 +157,9 @@ async def handle_message(
     if mode == "explain":
         message_text = (
             "Explain this topic like an expert tutor. Break it down using the Feynman technique. "
-            "Start with the core intuition, give a relatable analogy, provide the technical breakdown or steps, "
-            "and finish with a concrete example. Vary your analogy phrasing naturally and dynamically across topics—avoid using static repetitive clichés like 'Think of it as...'. Topic: " + message_text
+            "Start with the core intuition, give a relatable everyday analogy, provide clear steps, "
+            "and finish with an easy-to-follow practical example using plain, familiar words rather than dense technical jargon. "
+            "Avoid static clichés like 'Think of it as...'. Topic: " + message_text
         )
 
     await send_ai_reply(update, context, message_text, remember=True)
