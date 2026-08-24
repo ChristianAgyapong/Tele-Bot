@@ -442,11 +442,15 @@ async def explain_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     prompt = (
         f"Act as an expert academic tutor and explain the following topic in depth: {topic}.\n\n"
         "Structure your response as follows:\n"
-        "1. 🎯 <b>The Core Idea</b>: A simple, intuitive explanation (Feynman technique).\n"
-        "2. 💡 <b>Analogy</b>: A relatable real-world comparison using everyday, familiar concepts.\n"
-        "3. ⚙️ <b>How it Works</b>: Clear breakdown of the key concepts or steps.\n"
-        "4. 📝 <b>Example</b>: An easy-to-follow, practical example using relatable Ghana-based scenarios (e.g. local names like Kwame/Ama, MoMo, trotro, local markets) and plain familiar words rather than dense technical jargon.\n"
-        "5. 🌍 <b>Why it Matters</b>: The broader real-world significance of the topic.\n\n"
+        "1. \U0001f3af <b>The Core Idea</b>: A simple, intuitive explanation (Feynman technique).\n"
+        "2. \U0001f4a1 <b>Analogy</b>: A relatable real-world comparison using everyday, familiar concepts.\n"
+        "3. \u2699\ufe0f <b>How it Works</b>: Clear breakdown of the key concepts or steps.\n"
+        "4. \U0001f4dd <b>Example</b>: An easy-to-follow, practical example grounded in a relatable Ghana context "
+        "(e.g. using local names like Kwame/Ama/Kofi/Abena, scenarios like MoMo transactions, BECE/WASSCE prep, susu savings, "
+        "waakye sellers, trotro journeys, Makola Market, Kejetia, KNUST/Legon campus life, MTN data bundles, "
+        "cocoa farming, NHIS, chop bars, Black Stars, or city/town references like Accra, Kumasi, Tamale). "
+        "Pick whichever fits the topic most naturally.\n"
+        "5. \U0001f30d <b>Why it Matters</b>: The broader real-world significance of the topic.\n\n"
         "Keep it highly engaging, accessible, patient, and formatted cleanly for Telegram."
     )
 
