@@ -9,6 +9,7 @@ from config.settings import QUIZ_DIFFICULTY, QUIZ_MAX_TOKENS, QUIZ_TEMPERATURE, 
 from services.ai_service import generate_response
 from handlers.messages import send_ai_reply
 from handlers.start import MAIN_KEYBOARD
+from utils.helpers import split_message
 
 DEFAULT_QUIZ_QUESTIONS = 5
 QUIZ_KEY = "active_quiz"
@@ -298,7 +299,6 @@ async def quiz_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
     _, action = query.data.split(":", 1)
 
     if action == "done" or quiz["index"] >= len(quiz["questions"]):
-        # Show the final score inside the same message.
         total = len(quiz["questions"])
         score = quiz["score"]
         pct = score / total
@@ -310,14 +310,45 @@ async def quiz_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
             grade = "👍 Good effort!"
         else:
             grade = "💪 Keep practising!"
+
+        # Build full summary of all questions with correct answers
+        summary_parts = [
+            f"🏁 <b>Quiz Complete!</b>\n"
+            f"Score: <b>{score}/{total}</b> ({int(pct * 100)}%) — {grade}\n\n"
+            f"📋 <b>Answer Key & Review:</b>\n"
+        ]
+
+        for i, q in enumerate(quiz["questions"], start=1):
+            safe_q = (
+                q["question"]
+                .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            )
+            c_idx = q["correct"]
+            c_label = "ABCD"[c_idx]
+            c_option = (
+                q["options"][c_idx]
+                .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            )
+            summary_parts.append(
+                f"<b>{i}. {safe_q}</b>\n"
+                f"   ✅ <b>Answer:</b> {c_label}. {c_option}\n"
+            )
+
+        full_text = "\n".join(summary_parts)
         context.chat_data.pop(QUIZ_KEY, None)
+
+        chunks = split_message(full_text, max_length=3800)
         await query.edit_message_text(
-            f"🏁 <b>Quiz Complete!</b>\n\n"
-            f"Score: <b>{score}/{total}</b>\n"
-            f"{grade}",
+            chunks[0],
             parse_mode=ParseMode.HTML,
         )
-        # Send a small follow-up to restore the reply keyboard.
+        for chunk in chunks[1:]:
+            await query.message.reply_text(
+                chunk,
+                parse_mode=ParseMode.HTML,
+            )
+
+        # Restore reply keyboard options
         await query.message.reply_text(
             "Ready for another quiz or want to chat? Use the buttons below.",
             reply_markup=MAIN_KEYBOARD,
