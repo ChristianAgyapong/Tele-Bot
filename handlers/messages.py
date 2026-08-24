@@ -222,7 +222,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         response = await analyze_image(bytes(image_bytes), image_prompt)
         if mode == "quiz":
             if response == VISION_FALLBACK_MESSAGE:
-                await update.message.reply_text(response, reply_markup=MAIN_KEYBOARD)
+                await update.message.reply_text(response, reply_markup=keyboard_for_mode("quiz"))
                 return
             from handlers.academics import create_quiz
 
@@ -235,18 +235,29 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 question_count=quiz_setup["question_count"],
             )
             return
+
+        # Store image analysis in conversation memory so follow-up user messages can refer back to it
+        if response != VISION_FALLBACK_MESSAGE:
+            history = list(context.chat_data.get(CONVERSATION_KEY, []))
+            user_entry = f"[User sent an image] {caption}" if caption else "[User sent an image]"
+            updated_history = history + [
+                {"role": "user", "content": user_entry},
+                {"role": "assistant", "content": response},
+            ]
+            context.chat_data[CONVERSATION_KEY] = updated_history[-MAX_HISTORY_MESSAGES:]
+
         for chunk in split_message(format_telegram_message(response)):
             await update.message.reply_text(
                 chunk,
                 parse_mode=ParseMode.HTML,
                 disable_web_page_preview=True,
-                reply_markup=MAIN_KEYBOARD,
+                reply_markup=keyboard_for_mode(mode),
             )
     except Exception:
         logger.exception("Failed to analyze image for chat %s", update.effective_chat.id)
         await update.message.reply_text(
             "I couldn't analyze that image right now. Please try again.",
-            reply_markup=MAIN_KEYBOARD,
+            reply_markup=keyboard_for_mode(mode),
         )
     finally:
         typing_task.cancel()
