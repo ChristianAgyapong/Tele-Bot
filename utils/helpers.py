@@ -76,7 +76,14 @@ def format_telegram_message(text: str) -> str:
     if not text:
         return "I couldn't generate a response right now."
 
-    normalized = text.replace("\r\n", "\n").replace("\r", "\n").strip()
+    # Remove HTML line breaks that might leak into the output
+    normalized = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+    
+    # Remove markdown checkboxes like [ ], [x], or [] that users perceive as unused brackets
+    normalized = re.sub(r"\[\s?[xX ]?\s?\]\s*", "", normalized)
+    
+    # Clean up standard newlines
+    normalized = normalized.replace("\r\n", "\n").replace("\r", "\n").strip()
     lines = normalized.split("\n")
     formatted_parts = []
     index = 0
