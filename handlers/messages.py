@@ -15,22 +15,47 @@ CONVERSATION_KEY = "conversation"
 MODE_KEY = "mode"
 QUIZ_SETUP_KEY = "quiz_setup"
 SOCIAL_REPLIES = {
+    # Gratitude
     "thanks": "You're welcome! I'm here whenever you need help.",
     "thank you": "You're welcome! Happy to help.",
     "thank you so much": "You're very welcome!",
     "thx": "You're welcome!",
     "ty": "You're welcome!",
+    "medaase": "You're welcome! Anything else you'd like to learn?",
+    
+    # Positive feedback
     "great": "Glad that helped! What would you like to explore next?",
     "awesome": "Awesome! Let me know if you want to break down another topic.",
     "nice": "Glad it was clear! Feel free to ask whenever you have more questions.",
-    "cool": "Glad that made sense!",
+    "cool": "Glad that made sense! What's next on the study list?",
     "perfect": "Perfect! Ready whenever you want to work on the next topic.",
+    "good": "Glad that helped! Let's keep the momentum going.",
+    "wow": "I know, right? Learning is fun! What should we tackle next?",
+    
+    # Understanding
     "got it": "Great! Let me know whenever you're ready for the next topic.",
     "makes sense": "Glad it made sense! Ask away if you have any follow-ups.",
+    "i understand": "Perfect! Should we move on to something else?",
+    "understood": "Awesome. Whenever you're ready, we can tackle the next challenge.",
+    
+    # Acknowledgement
     "ok": "Got it! What shall we work on next?",
     "okay": "Got it! What shall we work on next?",
     "alright": "Alright! Let me know what you'd like to look at next.",
-    "good": "Glad that helped!",
+    "sure": "Sure thing! Tell me what's next on your mind.",
+    "yes": "Awesome! Let's keep going. What's next?",
+    "yep": "Great! Feel free to throw another topic my way.",
+    "yeah": "Sounds good! What do you want to learn about now?",
+    
+    # Greetings
+    "hi": "Hello! Ready to study? What can I help you with today?",
+    "hello": "Hi there! What topic are we breaking down today?",
+    "hey": "Hey! How can I help you learn something new today?",
+    "good morning": "Good morning! Let's get some studying done. What's on the agenda?",
+    "good afternoon": "Good afternoon! Ready to learn? What's on your mind?",
+    "good evening": "Good evening! Wrapping up the day with some studying? What can I help with?",
+    "chale": "Chale, what's up? Ready to learn something new today?",
+    "akwaaba": "Akwaaba! Welcome! What would you like to study today?",
 }
 
 
@@ -173,6 +198,8 @@ async def handle_message(
             "Explain this topic like an expert tutor. Break it down using the Feynman technique. "
             "Start with the core intuition, give a relatable everyday analogy, provide clear steps, "
             "and finish with an easy-to-follow practical example grounded in authentic Ghana-based context. "
+            "CRITICAL: Rotate your examples heavily! Do not just use Makola, Kejetia, or market stalls for every explanation. "
+            "Actively use other domains (technology, sports, school/campus life, transport, agriculture) so it stays fresh. "
             "Draw naturally from: local names (Kwame, Ama, Kofi, Abena, Akosua, Yaw, Adjoa, Kojo), "
             "MoMo transactions, susu savings, waakye/kenkey sellers, trotro/taxi journeys, chop bars, "
             "Makola/Kejetia markets, BECE or WASSCE prep, KNUST/Legon/UCC campus life, MTN/AirtelTigo data bundles, "
